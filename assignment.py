@@ -17,7 +17,7 @@
 
 import marimo
 
-__generated_with = "0.23.1"
+__generated_with = "0.23.4"
 app = marimo.App(width="medium")
 
 
@@ -300,8 +300,8 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df = pd.read_csv(
-        "data/cities.csv",
+    df = pd.read_csv("data/universities.csv"
+    ,
         dtype={
             "city": "string",
             "country": "string",
@@ -370,20 +370,21 @@ def _(mo):
 @app.cell
 def _(make_axis, model):
     axis1_pos = [
-        "megacity",
-        "sprawling metropolis",
-        "dense urban megalopolis",
-        "tens of millions of residents",
-        "global capital of commerce",
+        "elite university",
+        "ivy league",
+        "highly selective",
+        "prestigious institution",
+        "top ranked university"
     ]
 
     axis1_neg = [
-        "sleepy village",
-        "tiny hamlet",
-        "rural countryside town",
-        "fishing village",
-        "remote settlement",
+        "community college",
+        "open enrollment",
+        "less selective",
+        "local college",
+        "accessible education"
     ]
+
     axis_metro = make_axis(axis1_pos, axis1_neg, model)
     return (axis_metro,)
 
@@ -400,24 +401,26 @@ def _(mo):
     return
 
 
-@app.cell
-def _(make_axis, model):
+app._unparsable_cell(
+    r"""
     axis2_pos = [
-        "tropical climate",
-        "hot and humid",
-        "palm trees",
-        "equatorial weather",
-        "warm beaches",
+        ""research intensive",
+        "doctoral programs",
+        "graduate research",
+        "large research university",
+        "lab based study",
     ]
     axis2_neg = [
-        "arctic climate",
-        "cold snowy winters",
-        "northern latitude",
-        "Nordic weather",
-        "sub-zero temperatures",
+        "teaching focused",
+        "undergraduate education",
+        "small classes",
+        "liberal arts college",
+        "student centered learning",
     ]
     axis_climate = make_axis(axis2_pos, axis2_neg, model)
-    return (axis_climate,)
+    """,
+    name="_"
+)
 
 
 @app.cell(hide_code=True)
@@ -435,9 +438,9 @@ def _(mo):
 
 @app.cell
 def _(axis_climate, axis_metro, df, model):
-    x = score_words(df["city"].tolist(), axis_metro, model)
-    y = score_words(df["city"].tolist(), axis_climate, model)
-    df_scored = df.assign(x=x, y=y, abs_lat=df["lat"].abs())
+    x = score_words(df["name"].tolist(), axis_metro, model)
+    y = score_words(df["name"].tolist(), axis_climate, model)
+    df_scored = df.assign(x=x, y=y,)
     df_scored.head()
     return (df_scored,)
 
@@ -451,18 +454,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    color_by = mo.ui.dropdown(
-        options={
-            "region (categorical)": "region",
-            "business_activity (ordinal)": "business_activity",
-            "population (sequential, log)": "population",
-            "|latitude| (sequential, distance to equator)": "abs_lat",
-        },
-        value="region (categorical)",
-        label="Color by: ",
+def _(alt, df_scored):
+    alt.Chart(df_scored).mark_circle(size=60).encode(
+        x="x",
+        y="y",
+        color="region",
+        tooltip=["name", "type", "region"]
     )
-    return (color_by,)
+
+    return
 
 
 @app.cell(hide_code=True)
@@ -577,14 +577,27 @@ def _(mo):
 
     A good observation paragraph answers:
 
-    1. **What clusters form?** Which groups are pulled apart, which overlap?
-    2. **Are there surprises?** Points on the "wrong" side of an axis are
-       often the most informative — the model is telling you something
-       about how the entity is *discussed*, which may differ from what you
-       expect.
-    3. **What does the axis *not* capture?** Every axis is a linear
-       projection. Some distinctions you care about may be orthogonal to
-       both of your axes.
+    ### 1. What clusters form?
+
+    Most of the universities cluster toward the center of the graph. That tells me that, across the dataset, institutions are being described in relatively similar ways in terms of both prestige and research focus. There isn’t a strong horizontal separation, so the distinction between highly selective and less selective schools is not as pronounced in how they are represented.
+
+    There is more separation vertically. Universities that are more research-intensive tend to sit higher, while more teaching-focused institutions fall lower. So the research vs. teaching axis creates more meaningful spread than the prestige axis.
+
+    ---
+
+    ### 2. Are there surprises?
+
+    One thing that stands out is that not all prestigious universities are strongly aligned with the research-intensive side. Some of them sit closer to the center, which suggests their descriptions include both research and teaching elements rather than leaning heavily in one direction.
+
+    Another observation is that less selective institutions are not pushed as far to the negative side as expected. This suggests there is overlap in how institutions are described, and the language used does not create a strict separation between categories.
+
+    ---
+
+    ### 3. What does the axis not capture?
+
+    The axes do not capture regional differences well. Universities from different regions are mixed throughout the plot, which indicates that region is not a dominant semantic feature in how these institutions are described.
+
+    Additionally, the axes do not reflect other important aspects such as campus environment, student experience, or specialization. These are meaningful differences between institutions, but they are not represented in this projection. This shows that while the axes provide structure, they only capture part of the overall system.
     """)
     return
 
